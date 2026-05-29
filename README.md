@@ -24,6 +24,26 @@ https://cijing-wenyan.lumingfei693.workers.dev
 
 国内微信不建议使用 `workers.dev`，它在大陆网络可能需要代理。当前项目已新增腾讯 EdgeOne Pages 结构：`edgeone.json` 与 `edge-functions/api/*`。部署到 EdgeOne 后，页面和 API 都在国内可访问域名下，密钥放在 EdgeOne 环境变量里，不会暴露给浏览器。
 
+## 最简非腾讯路线：Zeabur
+
+如果不想用腾讯云/实名认证，最简单路线是把整个 Node 服务部署到 Zeabur。这个项目已经是单服务结构：`server.js` 同时提供页面和 `/api/translate`，密钥只放在 Zeabur 环境变量里。
+
+部署时设置：
+
+```text
+MIMO_API_KEY=你的 MiMo 密钥
+AI_PROVIDER=mimo
+AI_MODEL=mimo-v2.5-pro
+AI_MAX_OUTPUT_TOKENS=1600
+```
+
+项目里已提供 `zbpack.json`：
+
+```text
+build_command: npm ci
+start_command: npm start
+```
+
 ## 默认模型
 
 当前默认接入小米 MiMo：
