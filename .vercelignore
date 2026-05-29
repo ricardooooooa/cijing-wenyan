@@ -1,0 +1,8 @@
+.env
+.dev.vars
+.wrangler/
+.edgeone/
+.tef_dist/
+artifacts/
+node_modules/
+.git/

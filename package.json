@@ -5,7 +5,7 @@
   "description": "A refined local web app that rewrites modern Chinese into classical Chinese with an AI backend.",
   "scripts": {
     "start": "node server.js",
-    "check": "node --check server.js && node --check worker.js && node --check public/app.js && node --check edge-functions/api/config.js && node --check edge-functions/api/translate.js",
+    "check": "node --check server.js && node --check lib/ai-core.js && node --check api/config.js && node --check api/translate.js && node --check worker.js && node --check public/app.js && node --check edge-functions/api/config.js && node --check edge-functions/api/translate.js",
     "dev:worker": "wrangler dev --port 8787",
     "deploy": "wrangler deploy"
   },

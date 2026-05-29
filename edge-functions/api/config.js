@@ -1,4 +1,9 @@
 const providerPresets = {
+  deepseek: {
+    label: "DeepSeek",
+    envKey: "DEEPSEEK_API_KEY",
+    model: "deepseek-v4-pro"
+  },
   mimo: {
     label: "Xiaomi MiMo",
     envKey: "MIMO_API_KEY",
@@ -26,12 +31,13 @@ export function onRequestGet(context) {
 }
 
 function detectProvider(env) {
+  if (env.DEEPSEEK_API_KEY) return "deepseek";
   if (env.MIMO_API_KEY) return "mimo";
-  return "custom";
+  return "deepseek";
 }
 
 function normalizeProvider(provider) {
-  const value = String(provider || "mimo").trim().toLowerCase();
+  const value = String(provider || "deepseek").trim().toLowerCase();
   return providerPresets[value] ? value : "custom";
 }
 

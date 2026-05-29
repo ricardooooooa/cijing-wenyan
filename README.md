@@ -1,8 +1,40 @@
 # 辞镜
 
-一个本地运行的网页应用：输入现代汉语，输出对应文言文。前端负责高级质感交互，后端负责安全调用 AI。
+输入现代汉语，输出规范文言文。前端仍可托管在 GitHub Pages；AI 密钥只放在独立后端环境变量中。
 
-## 运行
+## 架构
+
+```text
+GitHub Pages(public/) -> window.CIJING_API_BASE -> Vercel Serverless(/api/*) -> DeepSeek
+```
+
+GitHub Pages 不能运行 `/api/translate` 与 `/api/config`，所以线上 AI 必须走独立后端。当前默认后端按 Vercel Serverless 配置，接口为：
+
+```text
+GET  /api/config
+POST /api/translate
+```
+
+## 本地运行
+
+复制环境变量模板：
+
+```powershell
+Copy-Item .env.example .env
+```
+
+填写 `.env`：
+
+```text
+AI_PROVIDER=deepseek
+DEEPSEEK_API_KEY=你的 DeepSeek Key
+AI_BASE_URL=https://api.deepseek.com
+AI_MODEL=deepseek-v4-pro
+AI_MAX_OUTPUT_TOKENS=1600
+CORS_ORIGIN=http://localhost:4173
+```
+
+启动：
 
 ```powershell
 npm start
@@ -14,59 +46,62 @@ npm start
 http://localhost:4173
 ```
 
-## 当前线上链接
+## 部署 Vercel 后端
 
-GitHub Pages 静态链接：
+在 Vercel 导入这个 GitHub 仓库，项目会使用根目录 `vercel.json` 与 `api/*` serverless 函数。
+
+在 Vercel Project Settings -> Environment Variables 设置：
+
+```text
+AI_PROVIDER=deepseek
+DEEPSEEK_API_KEY=你的 DeepSeek Key
+AI_BASE_URL=https://api.deepseek.com
+AI_MODEL=deepseek-v4-pro
+AI_MAX_OUTPUT_TOKENS=1600
+CORS_ORIGIN=https://ricardooooooa.github.io
+```
+
+部署完成后，确认：
+
+```text
+https://你的-vercel-域名/api/config
+```
+
+返回里应有：
+
+```json
+{"provider":"deepseek","providerLabel":"DeepSeek","model":"deepseek-v4-pro","online":true}
+```
+
+## 连接 GitHub Pages 前端
+
+`public/runtime-config.js` 负责把静态页面指向后端：
+
+```js
+if (!window.CIJING_API_BASE && window.location.hostname.endsWith("github.io")) {
+  window.CIJING_API_BASE = "https://cijing-wenyan.vercel.app";
+}
+```
+
+如果 Vercel 给你的域名不是这个，改成你的实际后端域名后重新发布 GitHub Pages。本地 `localhost` 不会被强制指向 Vercel，仍走本地 `/api/*`。不要把任何 API Key 写进 `runtime-config.js`、`app.js` 或 HTML。
+
+## 发布 GitHub Pages
+
+```powershell
+git subtree split --prefix public -b gh-pages
+git push --force-with-lease origin gh-pages:gh-pages
+git branch -D gh-pages
+```
+
+线上页面：
 
 ```text
 https://ricardooooooa.github.io/cijing-wenyan/
 ```
 
-这个链接结构和之前的 H5 一样，适合直接复制到微信里打开。注意：GitHub Pages 只能托管静态页面，不能安全保存 AI 密钥；所以这个链接当前提供静态预览/离线转换兜底。真正在线 AI 仍需要单独的服务端代理，不能把 MiMo key 写进前端。
+## 切换 LLM
 
-海外/备用链接：
-
-```text
-https://cijing-wenyan.lumingfei693.workers.dev
-```
-
-国内微信不建议使用 `workers.dev`，它在大陆网络可能需要代理。当前项目已新增腾讯 EdgeOne Pages 结构：`edgeone.json` 与 `edge-functions/api/*`。部署到 EdgeOne 后，页面和 API 都在国内可访问域名下，密钥放在 EdgeOne 环境变量里，不会暴露给浏览器。
-
-## 最简非腾讯路线：Zeabur
-
-如果不想用腾讯云/实名认证，最简单路线是把整个 Node 服务部署到 Zeabur。这个项目已经是单服务结构：`server.js` 同时提供页面和 `/api/translate`，密钥只放在 Zeabur 环境变量里。
-
-部署时设置：
-
-```text
-MIMO_API_KEY=你的 MiMo 密钥
-AI_PROVIDER=mimo
-AI_MODEL=mimo-v2.5-pro
-AI_MAX_OUTPUT_TOKENS=1600
-```
-
-项目里已提供 `zbpack.json`：
-
-```text
-build_command: npm ci
-start_command: npm start
-```
-
-## 默认模型
-
-当前默认接入小米 MiMo：
-
-```text
-AI_PROVIDER=mimo
-MIMO_API_KEY=你的 MiMo 密钥
-AI_MODEL=mimo-v2.5-pro
-```
-
-未配置密钥时，页面会自动使用离线预览，方便先看界面和流程。
-
-## 随时切换 LLM
-
-复制 `.env.example` 为 `.env`，改下面三项即可：
+保持 OpenAI 兼容接口时，只改后端环境变量：
 
 ```text
 AI_PROVIDER=custom
@@ -75,53 +110,16 @@ AI_BASE_URL=https://api.example.com/v1
 AI_MODEL=provider/model-name
 ```
 
-已内置预设：`mimo`、`deepseek`、`dashscope`、`openrouter`、`openai`、`custom`。多数 OpenAI 兼容接口不需要改代码，只换 `.env`。
-
-## 发布
-
-### Cloudflare Worker 备用发布
-
-首次或换密钥后，把密钥写入 Cloudflare Worker Secret：
-
-```powershell
-$mimoKey = (Get-Content .env | Where-Object { $_ -match '^MIMO_API_KEY=' }) -replace '^MIMO_API_KEY=', ''
-$mimoKey | npx wrangler secret put MIMO_API_KEY
-```
-
-发布：
-
-```powershell
-npm run deploy
-```
-
-### 腾讯 EdgeOne Pages 国内发布
-
-EdgeOne Pages 适合国内微信访问。需要在 EdgeOne Pages 控制台创建项目，并设置这些环境变量：
-
-```text
-AI_PROVIDER=mimo
-MIMO_API_KEY=你的 MiMo 密钥
-AI_MODEL=mimo-v2.5-pro
-AI_MAX_OUTPUT_TOKENS=1600
-```
-
-项目配置已写入 `edgeone.json`。从 GitHub 导入仓库后，EdgeOne 会使用：
-
-```text
-installCommand: npm ci
-buildCommand: npm run check
-outputDirectory: ./public
-```
+已内置：`deepseek`、`mimo`、`dashscope`、`openrouter`、`openai`、`custom`。
 
 ## 文件
 
-- `server.js`：本地网页服务、AI 提供商预设、转换接口
-- `worker.js`：Cloudflare Worker 线上服务和 AI 代理
-- `wrangler.toml`：Cloudflare Worker 发布配置
-- `edgeone.json`：腾讯 EdgeOne Pages 发布配置
-- `edge-functions/api/config.js`：EdgeOne 配置接口
-- `edge-functions/api/translate.js`：EdgeOne 文言文转换接口
-- `public/index.html`：页面结构
-- `public/styles.css`：界面视觉
-- `public/app.js`：交互逻辑
-- `public/assets/ink-paper-bg.png`：背景素材
+- `lib/ai-core.js`：统一 AI 配置、教学级 prompt、DeepSeek 调用、CORS、API 处理
+- `api/config.js`：Vercel `/api/config`
+- `api/translate.js`：Vercel `/api/translate`
+- `vercel.json`：Vercel serverless 配置
+- `server.js`：本地静态服务，并复用同一套 API 逻辑
+- `public/runtime-config.js`：GitHub Pages 前端的后端地址注入点
+- `public/app.js`：前端交互逻辑，后端不可达时才走离线兜底
+- `worker.js`：Cloudflare Worker 备用后端
+- `edge-functions/api/*`：EdgeOne 备用后端

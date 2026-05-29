@@ -1,6 +1,17 @@
 const maxBodyBytes = 64 * 1024;
 
 const providerPresets = {
+  deepseek: {
+    label: "DeepSeek",
+    envKey: "DEEPSEEK_API_KEY",
+    baseUrl: "https://api.deepseek.com",
+    model: "deepseek-v4-pro",
+    auth: "bearer",
+    maxTokenField: "max_tokens",
+    extraBody: {
+      thinking: { type: "disabled" }
+    }
+  },
   mimo: {
     label: "Xiaomi MiMo",
     envKey: "MIMO_API_KEY",
@@ -23,38 +34,60 @@ const providerPresets = {
 };
 
 const styleLabels = {
-  elegant: "大家文气，取意重构，典雅有余韵",
-  concise: "简古劲健，字少意足，如铭箴短札",
-  memorial: "奏疏表章，庄重有章法，先陈事理再收束",
-  lyrical: "清雅有诗意，借景寓意，留白含蓄"
+  elegant: "elegant 大家: 雅正通畅的标准文言,默认。",
+  concise: "concise 简古: 句更短、字更炼,近先秦质朴。",
+  memorial: "memorial 奏疏: 庄重的奏议公文口吻。",
+  lyrical: "lyrical 清雅: 略带文气,但仍以准确为先,不可因美失真。"
 };
 
 const densityLabels = {
-  light: "轻度雅化，保留原意与清晰度，但须去口语腔",
-  medium: "取意成章，允许重排句序、删去赘词、提升文气",
-  deep: "大胆炼意，抓住核心意象与情绪，务求意境与余味"
+  light: "light 浅润: 浅近文言,便于理解。",
+  medium: "medium 成章: 标准文言。",
+  deep: "deep 入境: 更纯熟老练的文言,但绝不堆砌或偏意。"
 };
 
-const literarySystemPrompt = [
-  "你是一位顶级中文文学家与古文写作者，擅取今人之意，化为有声气、有留白、有意境的古文短章。",
-  "任务不是逐字翻译，而是文学改写：先取其主旨、情绪、场景与说话人，再重组句法、删去口语赘词、炼成文气。",
-  "保留事实、人名、地名、数字、专有名词和必要现代术语；AI、API、LLM、大模型、网页、小程序等词必要时可保留，不要硬造古词。",
-  "可适度使用对偶、顿挫、虚词、典故感和意象，但不得新增具体事实，不得堆砌生僻字，不得写成白话翻译腔。",
-  "原文若是产品、网页或工具说明，不要停留在功能说明，要提炼成二至四个有节奏的分句，令读者感到文气与画面。",
-  "质量标尺：把“今天我们开始做一个可以把现代汉语转换成文言文的网页”化为“今开辞镜之牖，纳今言而生古意；屏间惟取清润，指下自得从容”这类有意境的短章；“今始营一网页，能转今语为文言”仍属直译，不合格。",
-  "输出应像成熟作者落笔：简洁、流动、含蓄，有余味。只输出改写后的文言文，不加标题、解释、引号或项目符号。"
-].join("\n");
+const literarySystemPrompt = `你是一位中学语文文言文教师,把现代汉语准确译为规范文言文,
+须达到教材与考试可接受的标准:准确、规范、雅正,而非辞藻堆砌。
+
+标准(优先级从高到低):
+1. 信(准确):原文每层意思都译出,不增、不减、不曲解。宁朴实,不失真。
+2. 达(规范):
+   - 虚词(之/乎/者/也/矣/焉/以/而等)用得其所,不滥用、不缺位。
+   - 不得残留白话:的、了、着、吗、呢、把、被(助词)、很、非常、一下等,一律转为文言。
+   - 不生造词。现代专名(网页、手机等)无确切古译时保留原词,不硬凑致误。
+   - 句式合文言习惯:判断、被动、省略、倒装自然得体。
+3. 雅(雅正):风格如《古文观止》《教材选文》般清通简洁,不堆砌、不滥情。
+
+铁律(违反即判不及格):
+- 绝不编造典故、诗句、出处、人名地名;无典可用就平实直译。
+- 绝不增添原文没有的情节、情感或评价。
+
+风格档(style):
+- elegant 大家:雅正通畅的标准文言,默认。
+- concise 简古:句更短、字更炼,近先秦质朴。
+- memorial 奏疏:庄重的奏议公文口吻。
+- lyrical 清雅:略带文气,但仍以准确为先,不可因美失真。
+
+程度档(density,只调文言化程度,不调准确度):
+- light 浅润:浅近文言,便于理解。
+- medium 成章:标准文言。
+- deep 入境:更纯熟老练的文言,但绝不堆砌或偏意。
+
+输出:只输出译文本身,不加解释、引号或前后语;原文多句则保持对应句读。
+
+示例:
+输入:因为他学习很努力,所以考试取得了好成绩。
+输出:彼学甚勤,故试得佳绩。
+输入:我喜欢你。
+输出:吾心悦汝。
+输入:今天天气很好,我们一起去公园散步吧。
+输出:今日天朗,可偕游于园。`;
 
 function buildLiteraryUserPrompt({ style, density, text }) {
   return [
-    `文风：${style}`,
-    `雅化程度：${density}`,
-    "改写要求：",
-    "1. 先理解整段意思，不按原句顺序机械对应。",
-    "2. 把平直表达炼成有画面、有节奏、有收束的古文。",
-    "3. 若原文偏口语或工具说明，也要写得雅正自然，不要把“今天我们开始做...”直译成“今日吾等始作...”，也不要写成“今启一器，可转今语...”这类说明腔。",
-    "4. 长句可拆合，重复可删，语气可上提；核心信息不可丢，读感必须优先于字面对齐。",
-    "原文：",
+    `style: ${style}`,
+    `density: ${density}`,
+    "请按上述标准,将下列现代汉语译为规范文言文。只输出译文:",
     text
   ].join("\n");
 }
@@ -190,19 +223,20 @@ function resolveAiConfig(env) {
     auth: env.AI_AUTH_HEADER || preset.auth,
     maxTokenField: env.AI_MAX_TOKEN_FIELD || preset.maxTokenField,
     maxOutputTokens: Number(env.AI_MAX_OUTPUT_TOKENS || 1600),
-    temperature: Number(env.AI_TEMPERATURE || 0.72),
-    topP: Number(env.AI_TOP_P || 0.9),
+    temperature: Number(env.AI_TEMPERATURE || 0.25),
+    topP: Number(env.AI_TOP_P || 0.85),
     extraBody: preset.extraBody || {}
   };
 }
 
 function detectProvider(env) {
+  if (env.DEEPSEEK_API_KEY) return "deepseek";
   if (env.MIMO_API_KEY) return "mimo";
-  return "custom";
+  return "deepseek";
 }
 
 function normalizeProvider(provider) {
-  const value = String(provider || "mimo").trim().toLowerCase();
+  const value = String(provider || "deepseek").trim().toLowerCase();
   return providerPresets[value] ? value : "custom";
 }
 
