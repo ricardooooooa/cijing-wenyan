@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#f7f4ed" />
+    <meta
+      name="description"
+      content="辞镜：输入现代汉语，一键化为典雅文言文。"
+    />
+    <meta name="format-detection" content="telephone=no,email=no,address=no" />
+    <meta property="og:title" content="辞镜" />
+    <meta property="og:description" content="今言入，古意出。把现代汉语化为文言文。" />
+    <meta property="og:type" content="website" />
+    <meta property="og:image" content="/assets/ink-paper-bg.png" />
+    <title>辞镜</title>
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <link rel="stylesheet" href="/styles.css?v=3" />
+  </head>
+  <body>
+    <main class="app-shell">
+      <header class="topbar" aria-label="应用栏">
+        <div class="brand">
+          <span class="brand-mark" aria-hidden="true">辞</span>
+          <div>
+            <h1>辞镜</h1>
+            <p>今言入，古意出</p>
+          </div>
+        </div>
+        <div class="status-pill" id="statusPill">本地就绪</div>
+      </header>
+
+      <section class="studio" aria-label="文言文转换工作台">
+        <form class="pane pane-input" id="translateForm">
+          <div class="pane-head">
+            <div>
+              <span class="kicker">Input</span>
+              <h2>今文</h2>
+            </div>
+            <button class="icon-button" type="button" id="clearButton" aria-label="清空输入" title="清空输入">
+              ×
+            </button>
+          </div>
+
+          <textarea
+            id="sourceText"
+            maxlength="2000"
+            spellcheck="false"
+            autocomplete="off"
+            autocapitalize="off"
+            enterkeyhint="send"
+            placeholder="写下你想改成文言文的内容。"
+          >今天我们开始做一个可以把现代汉语转换成文言文的网页，希望界面简洁、精致，并且使用起来很顺手。</textarea>
+
+          <div class="controls" aria-label="转换设置">
+            <div class="segmented" role="radiogroup" aria-label="文风">
+              <button type="button" class="segment active" data-style="elegant" aria-pressed="true">典雅</button>
+              <button type="button" class="segment" data-style="concise" aria-pressed="false">简古</button>
+              <button type="button" class="segment" data-style="memorial" aria-pressed="false">奏疏</button>
+              <button type="button" class="segment" data-style="lyrical" aria-pressed="false">清雅</button>
+            </div>
+
+            <label class="density">
+              <span>雅化</span>
+              <input id="densityRange" type="range" min="0" max="2" step="1" value="1" />
+              <output id="densityLabel">适中</output>
+            </label>
+          </div>
+
+          <div class="action-row">
+            <span class="counter" id="counter">0 / 2000</span>
+            <button class="primary-button" id="submitButton" type="submit">
+              <span class="button-glow" aria-hidden="true"></span>
+              <span id="submitLabel">化为文言</span>
+            </button>
+          </div>
+        </form>
+
+        <section class="pane pane-output" aria-live="polite">
+          <div class="pane-head">
+            <div>
+              <span class="kicker">Output</span>
+              <h2>文言</h2>
+            </div>
+            <button class="ghost-button" type="button" id="copyButton">复制</button>
+          </div>
+
+          <div class="result-wrap">
+            <p id="resultText" class="result-text">今日吾等始作一网页，可化今语为文言。愿其界面简净精致，用之顺手。</p>
+          </div>
+
+          <div class="meta-row">
+            <span id="modeLabel">预览</span>
+            <span id="latencyLabel">本地</span>
+          </div>
+        </section>
+      </section>
+    </main>
+
+    <script src="/app.js?v=3"></script>
+  </body>
+</html>
