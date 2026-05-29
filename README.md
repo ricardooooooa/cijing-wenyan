@@ -5,10 +5,14 @@
 ## 架构
 
 ```text
-GitHub Pages(public/) -> window.CIJING_API_BASE -> Vercel Serverless(/api/*) -> DeepSeek
+GitHub Pages(public/) -> DeepSeek API
 ```
 
-GitHub Pages 不能运行 `/api/translate` 与 `/api/config`，所以线上 AI 必须走独立后端。当前默认后端按 Vercel Serverless 配置，接口为：
+GitHub Pages 不能运行 `/api/translate` 与 `/api/config`。如果后端部署在 Vercel，国内微信网络可能打不开。当前 GitHub Pages 线上版采用最简单的国内可用方案：浏览器直连 DeepSeek 官方 API，首次使用时在本机浏览器输入 DeepSeek Key。
+
+Key 不写进仓库、不写进 HTML/JS 固定代码，也不会由 GitHub Pages 下发；它只保存在当前浏览器的 `localStorage`，请求时直接发给 DeepSeek。
+
+备用后端接口仍保留：
 
 ```text
 GET  /api/config
@@ -46,7 +50,25 @@ npm start
 http://localhost:4173
 ```
 
-## 部署 Vercel 后端
+## GitHub Pages 国内直连方案
+
+`public/runtime-config.js` 在 GitHub Pages 域名下启用直连 DeepSeek：
+
+```js
+if (window.location.hostname.endsWith("github.io")) {
+  window.CIJING_DIRECT_DEEPSEEK = true;
+  window.CIJING_DIRECT_DEEPSEEK_MODEL = "deepseek-v4-pro";
+}
+```
+
+使用方式：
+
+1. 打开 GitHub Pages 页面。
+2. 第一次点击转换时，输入 DeepSeek API Key。
+3. 之后同一台手机/浏览器会自动复用本机保存的 Key。
+4. 如果 Key 输错，接口返回 401/403 后会自动清除，下次点击会重新提示输入。
+
+## 备用：部署 Vercel 后端
 
 在 Vercel 导入这个 GitHub 仓库，项目会使用根目录 `vercel.json` 与 `api/*` serverless 函数。
 
@@ -61,29 +83,7 @@ AI_MAX_OUTPUT_TOKENS=1600
 CORS_ORIGIN=https://ricardooooooa.github.io
 ```
 
-部署完成后，确认：
-
-```text
-https://你的-vercel-域名/api/config
-```
-
-返回里应有：
-
-```json
-{"provider":"deepseek","providerLabel":"DeepSeek","model":"deepseek-v4-pro","online":true}
-```
-
-## 连接 GitHub Pages 前端
-
-`public/runtime-config.js` 负责把静态页面指向后端：
-
-```js
-if (!window.CIJING_API_BASE && window.location.hostname.endsWith("github.io")) {
-  window.CIJING_API_BASE = "https://cijing-wenyan.vercel.app";
-}
-```
-
-如果 Vercel 给你的域名不是这个，改成你的实际后端域名后重新发布 GitHub Pages。本地 `localhost` 不会被强制指向 Vercel，仍走本地 `/api/*`。不要把任何 API Key 写进 `runtime-config.js`、`app.js` 或 HTML。
+如需让 GitHub Pages 走 Vercel 后端，关闭 `CIJING_DIRECT_DEEPSEEK`，改用 `window.CIJING_API_BASE = "https://你的-vercel-域名"`。
 
 ## 发布 GitHub Pages
 

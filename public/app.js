@@ -16,8 +16,62 @@ const segments = Array.from(document.querySelectorAll(".segment"));
 const densityValues = ["light", "medium", "deep"];
 const densityNames = ["浅润", "成章", "入境"];
 const apiBase = window.CIJING_API_BASE || "";
+const directDeepSeek = Boolean(window.CIJING_DIRECT_DEEPSEEK);
+const directDeepSeekModel = window.CIJING_DIRECT_DEEPSEEK_MODEL || "deepseek-v4-pro";
+const directDeepSeekEndpoint = window.CIJING_DEEPSEEK_ENDPOINT || "https://api.deepseek.com/chat/completions";
+const directDeepSeekKeyName = "cijing.deepseek.apiKey";
 let selectedStyle = "elegant";
 let apiAvailable = true;
+
+const stylePromptLabels = {
+  elegant: "elegant 大家: 雅正通畅的标准文言,默认。",
+  concise: "concise 简古: 句更短、字更炼,近先秦质朴。",
+  memorial: "memorial 奏疏: 庄重的奏议公文口吻。",
+  lyrical: "lyrical 清雅: 略带文气,但仍以准确为先,不可因美失真。"
+};
+
+const densityPromptLabels = {
+  light: "light 浅润: 浅近文言,便于理解。",
+  medium: "medium 成章: 标准文言。",
+  deep: "deep 入境: 更纯熟老练的文言,但绝不堆砌或偏意。"
+};
+
+const translatorSystemPrompt = `你是一位中学语文文言文教师,把现代汉语准确译为规范文言文,
+须达到教材与考试可接受的标准:准确、规范、雅正,而非辞藻堆砌。
+
+标准(优先级从高到低):
+1. 信(准确):原文每层意思都译出,不增、不减、不曲解。宁朴实,不失真。
+2. 达(规范):
+   - 虚词(之/乎/者/也/矣/焉/以/而等)用得其所,不滥用、不缺位。
+   - 不得残留白话:的、了、着、吗、呢、把、被(助词)、很、非常、一下等,一律转为文言。
+   - 不生造词。现代专名(网页、手机等)无确切古译时保留原词,不硬凑致误。
+   - 句式合文言习惯:判断、被动、省略、倒装自然得体。
+3. 雅(雅正):风格如《古文观止》《教材选文》般清通简洁,不堆砌、不滥情。
+
+铁律(违反即判不及格):
+- 绝不编造典故、诗句、出处、人名地名;无典可用就平实直译。
+- 绝不增添原文没有的情节、情感或评价。
+
+风格档(style):
+- elegant 大家:雅正通畅的标准文言,默认。
+- concise 简古:句更短、字更炼,近先秦质朴。
+- memorial 奏疏:庄重的奏议公文口吻。
+- lyrical 清雅:略带文气,但仍以准确为先,不可因美失真。
+
+程度档(density,只调文言化程度,不调准确度):
+- light 浅润:浅近文言,便于理解。
+- medium 成章:标准文言。
+- deep 入境:更纯熟老练的文言,但绝不堆砌或偏意。
+
+输出:只输出译文本身,不加解释、引号或前后语;原文多句则保持对应句读。
+
+示例:
+输入:因为他学习很努力,所以考试取得了好成绩。
+输出:彼学甚勤,故试得佳绩。
+输入:我喜欢你。
+输出:吾心悦汝。
+输入:今天天气很好,我们一起去公园散步吧。
+输出:今日天朗,可偕游于园。`;
 
 updateCounter();
 loadRuntimeConfig();
@@ -89,28 +143,18 @@ form.addEventListener("submit", async (event) => {
       throw new Error("api unavailable");
     }
 
-    const response = await fetch(buildApiUrl("api/translate"), {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
+    const density = densityValues[Number(densityRange.value)] || "medium";
+    const payload = directDeepSeek
+      ? await translateWithDirectDeepSeek({
         text,
         style: selectedStyle,
-        density: densityValues[Number(densityRange.value)] || "medium"
+        density
       })
-    });
-
-    const contentType = response.headers.get("content-type") || "";
-    if (!contentType.includes("application/json")) {
-      throw new Error("api unavailable");
-    }
-
-    const payload = await response.json();
-
-    if (!response.ok) {
-      throw new Error(payload.detail || payload.error || "转换失败");
-    }
+      : await translateWithBackend({
+        text,
+        style: selectedStyle,
+        density
+      });
 
     resultText.textContent = payload.result || "";
     modeLabel.textContent = payload.mode === "ai" ? payload.providerLabel || "AI" : "离线预览";
@@ -146,6 +190,14 @@ function setLoading(loading) {
 }
 
 async function loadRuntimeConfig() {
+  if (directDeepSeek) {
+    apiAvailable = true;
+    statusPill.textContent = "DeepSeek 直连";
+    modeLabel.textContent = "DeepSeek";
+    latencyLabel.textContent = directDeepSeekModel;
+    return;
+  }
+
   try {
     const response = await fetch(buildApiUrl("api/config"));
     const contentType = response.headers.get("content-type") || "";
@@ -166,6 +218,107 @@ async function loadRuntimeConfig() {
     modeLabel.textContent = "预览";
     latencyLabel.textContent = "本地";
   }
+}
+
+async function translateWithBackend({ text, style, density }) {
+  const response = await fetch(buildApiUrl("api/translate"), {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({ text, style, density })
+  });
+
+  const contentType = response.headers.get("content-type") || "";
+  if (!contentType.includes("application/json")) {
+    throw new Error("api unavailable");
+  }
+
+  const payload = await response.json();
+
+  if (!response.ok) {
+    throw new Error(payload.detail || payload.error || "转换失败");
+  }
+
+  return payload;
+}
+
+async function translateWithDirectDeepSeek({ text, style, density }) {
+  const apiKey = getDirectDeepSeekKey();
+  const startedAt = performance.now();
+  const response = await fetch(directDeepSeekEndpoint, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${apiKey}`
+    },
+    body: JSON.stringify({
+      model: directDeepSeekModel,
+      temperature: 0.25,
+      top_p: 0.85,
+      max_tokens: 1600,
+      stream: false,
+      messages: [
+        {
+          role: "system",
+          content: translatorSystemPrompt
+        },
+        {
+          role: "user",
+          content: buildDirectDeepSeekPrompt({ style, density, text })
+        }
+      ]
+    })
+  });
+
+  const payload = await response.json().catch(() => ({}));
+
+  if (!response.ok) {
+    if (response.status === 401 || response.status === 403) {
+      localStorage.removeItem(directDeepSeekKeyName);
+    }
+
+    throw new Error(payload.error?.message || payload.message || "DeepSeek 调用失败");
+  }
+
+  const result = payload.choices?.[0]?.message?.content?.trim();
+  if (!result) {
+    throw new Error("DeepSeek 没有返回可用文本");
+  }
+
+  return {
+    result,
+    mode: "ai",
+    provider: "deepseek",
+    providerLabel: "DeepSeek",
+    model: directDeepSeekModel,
+    latencyMs: performance.now() - startedAt
+  };
+}
+
+function getDirectDeepSeekKey() {
+  const saved = localStorage.getItem(directDeepSeekKeyName);
+  if (saved) {
+    return saved;
+  }
+
+  const value = window.prompt("请输入 DeepSeek API Key。Key 只保存在本机浏览器，不会写入网页代码。");
+  const trimmed = String(value || "").trim();
+  if (!trimmed) {
+    throw new Error("missing deepseek key");
+  }
+
+  localStorage.setItem(directDeepSeekKeyName, trimmed);
+  return trimmed;
+}
+
+function buildDirectDeepSeekPrompt({ style, density, text }) {
+  return [
+    `style: ${stylePromptLabels[style] || stylePromptLabels.elegant}`,
+    `density: ${densityPromptLabels[density] || densityPromptLabels.medium}`,
+    "请按上述标准,将下列现代汉语译为规范文言文。只输出译文:",
+    text
+  ].join("\n");
 }
 
 function buildApiUrl(path) {
