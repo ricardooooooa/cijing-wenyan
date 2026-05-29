@@ -15,7 +15,9 @@ const segments = Array.from(document.querySelectorAll(".segment"));
 
 const densityValues = ["light", "medium", "deep"];
 const densityNames = ["轻", "适中", "深"];
+const apiBase = window.CIJING_API_BASE || "";
 let selectedStyle = "elegant";
+let apiAvailable = true;
 
 updateCounter();
 loadRuntimeConfig();
@@ -77,13 +79,17 @@ form.addEventListener("submit", async (event) => {
   setLoading(true);
   resultText.classList.remove("placeholder");
   resultText.textContent = "化辞中...";
-  modeLabel.textContent = "请求中";
+  modeLabel.textContent = apiAvailable ? "请求中" : "离线预览";
   latencyLabel.textContent = "等待";
 
   const startedAt = performance.now();
 
   try {
-    const response = await fetch("/api/translate", {
+    if (!apiAvailable) {
+      throw new Error("api unavailable");
+    }
+
+    const response = await fetch(buildApiUrl("api/translate"), {
       method: "POST",
       headers: {
         "Content-Type": "application/json"
@@ -94,6 +100,11 @@ form.addEventListener("submit", async (event) => {
         density: densityValues[Number(densityRange.value)] || "medium"
       })
     });
+
+    const contentType = response.headers.get("content-type") || "";
+    if (!contentType.includes("application/json")) {
+      throw new Error("api unavailable");
+    }
 
     const payload = await response.json();
 
@@ -109,11 +120,12 @@ form.addEventListener("submit", async (event) => {
         : "本地";
     setStatus(payload.mode === "ai" ? "转换完成" : "离线预览");
   } catch (error) {
-    resultText.classList.add("placeholder");
-    resultText.textContent = error.message || "转换失败，请稍后再试。";
-    modeLabel.textContent = "错误";
-    latencyLabel.textContent = formatSeconds(performance.now() - startedAt);
-    setStatus("服务异常");
+    const offlineResult = offlineRewrite(text, selectedStyle);
+    resultText.classList.remove("placeholder");
+    resultText.textContent = offlineResult;
+    modeLabel.textContent = "离线预览";
+    latencyLabel.textContent = "本地";
+    setStatus("静态预览");
   } finally {
     setLoading(false);
   }
@@ -135,21 +147,30 @@ function setLoading(loading) {
 
 async function loadRuntimeConfig() {
   try {
-    const response = await fetch("/api/config");
-    const config = await response.json();
-
-    if (!response.ok) {
-      return;
+    const response = await fetch(buildApiUrl("api/config"));
+    const contentType = response.headers.get("content-type") || "";
+    if (!response.ok || !contentType.includes("application/json")) {
+      throw new Error("api unavailable");
     }
 
+    const config = await response.json();
+    apiAvailable = Boolean(config.online);
     statusPill.textContent = config.online
       ? `${config.providerLabel} 已接入`
       : "离线预览";
     modeLabel.textContent = config.online ? config.providerLabel : "预览";
     latencyLabel.textContent = config.online ? config.model : "本地";
   } catch {
-    statusPill.textContent = "本地就绪";
+    apiAvailable = false;
+    statusPill.textContent = "静态预览";
+    modeLabel.textContent = "预览";
+    latencyLabel.textContent = "本地";
   }
+}
+
+function buildApiUrl(path) {
+  const normalizedBase = apiBase.replace(/\/$/, "");
+  return normalizedBase ? `${normalizedBase}/${path}` : path;
 }
 
 async function copyText(value) {
@@ -183,4 +204,79 @@ function flashCopyLabel(label) {
 
 function formatSeconds(ms) {
   return `${Math.max(0.1, Math.round(ms / 100) / 10)} 秒`;
+}
+
+function offlineRewrite(text, style) {
+  const replacements = [
+    ["我们", "吾等"],
+    ["你们", "尔等"],
+    ["他们", "彼辈"],
+    ["因为", "盖因"],
+    ["所以", "故"],
+    ["但是", "然"],
+    ["如果", "若"],
+    ["已经", "已"],
+    ["正在", "方"],
+    ["需要", "须"],
+    ["希望", "愿"],
+    ["可以", "可"],
+    ["不能", "不可"],
+    ["没有", "未有"],
+    ["今天", "今日"],
+    ["明天", "翌日"],
+    ["昨天", "昨者"],
+    ["这里", "此地"],
+    ["那里", "彼处"],
+    ["事情", "事"],
+    ["问题", "患"],
+    ["方法", "法"],
+    ["重要", "要"],
+    ["完成", "竟"],
+    ["开始", "始"],
+    ["喜欢", "喜"],
+    ["知道", "知"],
+    ["认为", "以为"],
+    ["告诉", "告"],
+    ["帮助", "助"],
+    ["查看", "察"],
+    ["输入", "录入"],
+    ["文字", "文辞"],
+    ["我", "吾"],
+    ["你", "子"],
+    ["他", "彼"],
+    ["她", "彼"],
+    ["的", "之"],
+    ["了", "矣"]
+  ];
+
+  let output = text
+    .replace(/\r\n/g, "\n")
+    .replace(/[?？]/g, "乎？")
+    .replace(/[!！]/g, "矣。")
+    .replace(/[,，]/g, "，")
+    .replace(/[.。]+/g, "。");
+
+  for (const [from, to] of replacements) {
+    output = output.split(from).join(to);
+  }
+
+  output = output
+    .replace(/，+/g, "，")
+    .replace(/。+/g, "。")
+    .replace(/\s+/g, "")
+    .trim();
+
+  if (!/[。？！]$/.test(output)) {
+    output += "。";
+  }
+
+  if (style === "memorial") {
+    return `臣谨按：${output}`;
+  }
+
+  if (style === "lyrical") {
+    return `余观其意，${output}`;
+  }
+
+  return output;
 }

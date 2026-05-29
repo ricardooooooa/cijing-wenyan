@@ -34,7 +34,7 @@ body {
   color: var(--ink);
   background:
     linear-gradient(115deg, rgba(255, 255, 255, 0.82), rgba(246, 241, 231, 0.5)),
-    image-set(url("/assets/ink-paper-bg.png") 1x);
+    image-set(url("assets/ink-paper-bg.png") 1x);
   background-size: cover;
   background-position: center;
   overflow-x: hidden;

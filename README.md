@@ -16,6 +16,14 @@ http://localhost:4173
 
 ## 当前线上链接
 
+GitHub Pages 静态链接：
+
+```text
+https://ricardooooooa.github.io/cijing-wenyan/
+```
+
+这个链接结构和之前的 H5 一样，适合直接复制到微信里打开。注意：GitHub Pages 只能托管静态页面，不能安全保存 AI 密钥；所以这个链接当前提供静态预览/离线转换兜底。真正在线 AI 仍需要单独的服务端代理，不能把 MiMo key 写进前端。
+
 海外/备用链接：
 
 ```text
