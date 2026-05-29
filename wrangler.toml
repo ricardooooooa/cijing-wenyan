@@ -1,0 +1,12 @@
+name = "cijing-wenyan"
+main = "./worker.js"
+compatibility_date = "2026-05-29"
+
+[assets]
+directory = "./public"
+binding = "ASSETS"
+
+[vars]
+AI_PROVIDER = "mimo"
+AI_MODEL = "mimo-v2.5-pro"
+AI_MAX_OUTPUT_TOKENS = "1600"

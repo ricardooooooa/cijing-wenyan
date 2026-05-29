@@ -1,0 +1,17 @@
+{
+  "name": "wenyan-transformer",
+  "version": "1.0.0",
+  "private": true,
+  "description": "A refined local web app that rewrites modern Chinese into classical Chinese with an AI backend.",
+  "scripts": {
+    "start": "node server.js",
+    "dev:worker": "wrangler dev --port 8787",
+    "deploy": "wrangler deploy"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "devDependencies": {
+    "wrangler": "^4.95.0"
+  }
+}

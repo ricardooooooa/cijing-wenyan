@@ -1,0 +1,10 @@
+{
+  "name": "辞镜",
+  "short_name": "辞镜",
+  "description": "输入现代汉语，一键化为典雅文言文。",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f7f4ed",
+  "theme_color": "#f7f4ed",
+  "lang": "zh-CN"
+}
