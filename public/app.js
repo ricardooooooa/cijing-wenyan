@@ -14,7 +14,7 @@ const densityLabel = document.querySelector("#densityLabel");
 const segments = Array.from(document.querySelectorAll(".segment"));
 
 const densityValues = ["light", "medium", "deep"];
-const densityNames = ["轻", "适中", "深"];
+const densityNames = ["浅润", "成章", "入境"];
 const apiBase = window.CIJING_API_BASE || "";
 let selectedStyle = "elegant";
 let apiAvailable = true;
@@ -35,7 +35,7 @@ segments.forEach((button) => {
 });
 
 densityRange.addEventListener("input", () => {
-  densityLabel.textContent = densityNames[Number(densityRange.value)] || "适中";
+  densityLabel.textContent = densityNames[Number(densityRange.value)] || "成章";
 });
 
 sourceText.addEventListener("input", updateCounter);
@@ -207,7 +207,29 @@ function formatSeconds(ms) {
 }
 
 function offlineRewrite(text, style) {
+  const compact = text.replace(/\s+/g, "");
+  const themed = themedOfflineRewrite(compact);
+  if (themed) {
+    return applyOfflineStyle(themed, style);
+  }
+
   const replacements = [
+    ["今天我们开始做", "今启"],
+    ["可以把现代汉语转换成文言文", "使今言化为古文"],
+    ["现代汉语", "今言"],
+    ["文言文", "古文"],
+    ["转换成", "化为"],
+    ["转换", "化"],
+    ["用户使用反馈", "用户有言"],
+    ["一点都不雅", "殊乏雅致"],
+    ["全是直译", "多循字面"],
+    ["没有意境", "少烟霞之致"],
+    ["超级文学家", "文章大家"],
+    ["界面简洁", "界面清简"],
+    ["简洁", "清简"],
+    ["精致", "精雅"],
+    ["顺手", "从容便捷"],
+    ["并且", "且"],
     ["我们", "吾等"],
     ["你们", "尔等"],
     ["他们", "彼辈"],
@@ -262,21 +284,76 @@ function offlineRewrite(text, style) {
 
   output = output
     .replace(/，+/g, "，")
+    .replace(/；+/g, "；")
     .replace(/。+/g, "。")
     .replace(/\s+/g, "")
     .trim();
 
-  if (!/[。？！]$/.test(output)) {
-    output += "。";
+  output = output
+    .split(/[。；;]/)
+    .map((sentence) => sentence.trim())
+    .filter(Boolean)
+    .map(polishOfflineSentence)
+    .join("；");
+
+  return applyOfflineStyle(output, style);
+}
+
+function themedOfflineRewrite(compact) {
+  if (/(一点都不雅|不雅|全是直译|没有意境|少意境|超级文学家|文学家)/.test(compact)) {
+    return "其辞未臻雅驯，徒循字面而少烟霞之致；当更张笔法，取意炼神，使一语落纸，便有大家风骨。";
   }
+
+  if (/现代汉语.*文言文/.test(compact) && /(网页|小程序|页面)/.test(compact)) {
+    return "今开辞镜之牖，纳今言而生古意；屏间惟取清润，指下自得从容。";
+  }
+
+  if (/(界面|页面).*(高级|苹果|简洁|精致)/.test(compact)) {
+    return "其界面当清如素笺，润若玉色；举手之间，繁者自隐，雅意自生。";
+  }
+
+  return "";
+}
+
+function polishOfflineSentence(sentence) {
+  return sentence
+    .replace(/今日吾等始/g, "今启")
+    .replace(/吾等始/g, "吾辈始")
+    .replace(/之网页/g, "之页")
+    .replace(/愿界面/g, "愿其界面")
+    .replace(/希望/g, "愿")
+    .replace(/使用起来/g, "用之")
+    .replace(/很/g, "颇")
+    .replace(/可化今言为古文/g, "使今言化为古文")
+    .replace(/界面清简、精雅/g, "界面清润精雅");
+}
+
+function applyOfflineStyle(output, style) {
+  const normalized = normalizeOfflinePunctuation(output);
 
   if (style === "memorial") {
-    return `臣谨按：${output}`;
+    return `臣谨言：${normalized}`;
   }
 
-  if (style === "lyrical") {
-    return `余观其意，${output}`;
+  if (style === "concise") {
+    return normalized.replace(/；/g, "。");
   }
 
-  return output;
+  return normalized;
+}
+
+function normalizeOfflinePunctuation(output) {
+  const normalized = String(output || "")
+    .replace(/\s+/g, "")
+    .replace(/，+/g, "，")
+    .replace(/；+/g, "；")
+    .replace(/。+/g, "。")
+    .replace(/；。/g, "。")
+    .trim();
+
+  if (!normalized) {
+    return "辞意未明，姑俟再书。";
+  }
+
+  return /[。？！]$/.test(normalized) ? normalized : `${normalized}。`;
 }

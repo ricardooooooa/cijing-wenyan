@@ -15,7 +15,7 @@
     <meta property="og:image" content="./assets/ink-paper-bg.png" />
     <title>辞镜</title>
     <link rel="manifest" href="./manifest.webmanifest" />
-    <link rel="stylesheet" href="./styles.css?v=5" />
+    <link rel="stylesheet" href="./styles.css?v=6" />
   </head>
   <body>
     <main class="app-shell">
@@ -54,7 +54,7 @@
 
           <div class="controls" aria-label="转换设置">
             <div class="segmented" role="radiogroup" aria-label="文风">
-              <button type="button" class="segment active" data-style="elegant" aria-pressed="true">典雅</button>
+              <button type="button" class="segment active" data-style="elegant" aria-pressed="true">大家</button>
               <button type="button" class="segment" data-style="concise" aria-pressed="false">简古</button>
               <button type="button" class="segment" data-style="memorial" aria-pressed="false">奏疏</button>
               <button type="button" class="segment" data-style="lyrical" aria-pressed="false">清雅</button>
@@ -62,8 +62,8 @@
 
             <label class="density">
               <span>雅化</span>
-              <input id="densityRange" type="range" min="0" max="2" step="1" value="1" />
-              <output id="densityLabel">适中</output>
+              <input id="densityRange" type="range" min="0" max="2" step="1" value="2" />
+              <output id="densityLabel">入境</output>
             </label>
           </div>
 
@@ -86,7 +86,7 @@
           </div>
 
           <div class="result-wrap">
-            <p id="resultText" class="result-text">今日吾等始作一网页，可化今语为文言。愿其界面简净精致，用之顺手。</p>
+            <p id="resultText" class="result-text">今开辞镜之牖，纳今言而生古意；屏间惟取清润，指下自得从容。</p>
           </div>
 
           <div class="meta-row">
@@ -97,6 +97,6 @@
       </section>
     </main>
 
-    <script src="./app.js?v=5"></script>
+    <script src="./app.js?v=6"></script>
   </body>
 </html>
