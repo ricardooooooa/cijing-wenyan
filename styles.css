@@ -31,6 +31,7 @@ html {
 }
 
 body {
+  width: 100%;
   color: var(--ink);
   background:
     linear-gradient(115deg, rgba(255, 255, 255, 0.82), rgba(246, 241, 231, 0.5)),
@@ -65,16 +66,18 @@ button {
 }
 
 .app-shell {
-  width: min(1180px, calc(100% - 36px));
+  width: calc(100% - 48px);
+  max-width: 1280px;
   min-height: 100dvh;
   margin: 0 auto;
-  padding: max(24px, env(safe-area-inset-top)) 0 max(24px, env(safe-area-inset-bottom));
+  padding: max(28px, env(safe-area-inset-top)) 0 max(28px, env(safe-area-inset-bottom));
   display: grid;
   grid-template-rows: auto 1fr;
-  gap: 18px;
+  gap: 22px;
 }
 
 .topbar {
+  min-width: 0;
   min-height: 64px;
   display: flex;
   align-items: center;
@@ -83,6 +86,7 @@ button {
 }
 
 .brand {
+  min-width: 0;
   display: flex;
   align-items: center;
   gap: 14px;
@@ -129,6 +133,8 @@ button {
 }
 
 .status-pill {
+  min-width: 0;
+  flex: 0 1 auto;
   min-height: 36px;
   padding: 9px 14px;
   border: 1px solid rgba(31, 33, 31, 0.1);
@@ -142,15 +148,16 @@ button {
 }
 
 .studio {
-  min-height: clamp(560px, calc(100vh - 138px), 650px);
+  min-height: clamp(580px, calc(100dvh - 152px), 720px);
   display: grid;
   grid-template-columns: minmax(0, 1.02fr) minmax(0, 0.98fr);
-  gap: 18px;
+  gap: 20px;
   align-items: stretch;
 }
 
 .pane {
   min-width: 0;
+  max-width: 100%;
   min-height: 100%;
   display: flex;
   flex-direction: column;
@@ -238,7 +245,7 @@ button {
 textarea {
   flex: 0 1 auto;
   width: 100%;
-  height: clamp(200px, 32vh, 300px);
+  height: clamp(230px, 34dvh, 340px);
   min-height: 0;
   margin-top: 18px;
   padding: 20px 2px;
@@ -250,6 +257,8 @@ textarea {
   font-size: 25px;
   line-height: 1.66;
   letter-spacing: 0;
+  overflow-wrap: break-word;
+  word-break: break-word;
   -webkit-appearance: none;
   appearance: none;
 }
@@ -418,10 +427,54 @@ textarea::placeholder {
   color: rgba(31, 33, 31, 0.42);
 }
 
-@media (max-width: 900px) {
+@media (min-width: 1440px) {
   .app-shell {
-    width: min(100% - 24px, 720px);
-    padding: max(18px, env(safe-area-inset-top)) 0 max(18px, env(safe-area-inset-bottom));
+    width: calc(100% - 72px);
+    max-width: 1360px;
+    padding-top: max(36px, env(safe-area-inset-top));
+    padding-bottom: max(36px, env(safe-area-inset-bottom));
+  }
+
+  .studio {
+    gap: 24px;
+  }
+
+  .pane-input,
+  .pane-output {
+    padding: 32px;
+  }
+
+  textarea {
+    height: clamp(300px, 38dvh, 420px);
+  }
+}
+
+@media (max-width: 1120px) {
+  .app-shell {
+    width: calc(100% - 32px);
+    max-width: 1040px;
+  }
+
+  .studio {
+    min-height: clamp(540px, calc(100dvh - 140px), 660px);
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+
+  textarea {
+    height: clamp(220px, 30dvh, 300px);
+    font-size: 23px;
+  }
+
+  .result-text {
+    font-size: 28px;
+  }
+}
+
+@media (max-width: 960px) {
+  .app-shell {
+    width: calc(100% - 28px);
+    max-width: 760px;
+    padding: max(20px, env(safe-area-inset-top)) 0 max(20px, env(safe-area-inset-bottom));
   }
 
   .topbar {
@@ -431,6 +484,7 @@ textarea::placeholder {
   .studio {
     min-height: auto;
     grid-template-columns: 1fr;
+    gap: 16px;
   }
 
   .pane {
@@ -443,7 +497,7 @@ textarea::placeholder {
   }
 
   textarea {
-    height: 250px;
+    height: 280px;
     font-size: 21px;
   }
 
@@ -454,12 +508,15 @@ textarea::placeholder {
 
 @media (max-width: 560px) {
   .app-shell {
-    width: min(100% - 16px, 520px);
+    width: calc(100% - 14px);
+    max-width: 520px;
+    padding: max(12px, env(safe-area-inset-top)) 0 max(14px, env(safe-area-inset-bottom));
     gap: 12px;
   }
 
   .topbar {
     min-height: 52px;
+    gap: 10px;
   }
 
   .brand-mark {
@@ -479,12 +536,7 @@ textarea::placeholder {
   }
 
   .status-pill {
-    max-width: 128px;
-    min-height: 32px;
-    display: block;
-    overflow: hidden;
-    padding: 8px 11px;
-    text-overflow: ellipsis;
+    display: none;
   }
 
   .pane {
@@ -502,7 +554,8 @@ textarea::placeholder {
   }
 
   textarea {
-    height: 210px;
+    height: min(46dvh, 260px);
+    min-height: 190px;
     margin-top: 12px;
     padding: 14px 2px;
     font-size: 20px;
@@ -546,7 +599,8 @@ textarea::placeholder {
   }
 
   .result-wrap {
-    min-height: 180px;
+    min-height: 170px;
+    max-height: 46dvh;
     margin-top: 14px;
     padding: 20px 2px;
   }
@@ -572,7 +626,8 @@ textarea::placeholder {
   }
 
   textarea {
-    height: 190px;
+    height: 188px;
+    min-height: 170px;
     font-size: 19px;
   }
 
