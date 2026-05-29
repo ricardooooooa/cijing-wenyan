@@ -1,0 +1,6 @@
+{
+  "installCommand": "npm ci",
+  "buildCommand": "npm run check",
+  "outputDirectory": "./public",
+  "nodeVersion": "22.17.1"
+}

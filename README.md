@@ -14,15 +14,15 @@ npm start
 http://localhost:4173
 ```
 
-## 微信可打开的线上链接
+## 当前线上链接
 
-已发布到 Cloudflare Worker：
+海外/备用链接：
 
 ```text
 https://cijing-wenyan.lumingfei693.workers.dev
 ```
 
-这个链接是 HTTPS，可直接复制到微信聊天里打开。线上接口也在同一个域名下，密钥保存在 Cloudflare Worker Secret 中，不会暴露给浏览器。
+国内微信不建议使用 `workers.dev`，它在大陆网络可能需要代理。当前项目已新增腾讯 EdgeOne Pages 结构：`edgeone.json` 与 `edge-functions/api/*`。部署到 EdgeOne 后，页面和 API 都在国内可访问域名下，密钥放在 EdgeOne 环境变量里，不会暴露给浏览器。
 
 ## 默认模型
 
@@ -51,6 +51,8 @@ AI_MODEL=provider/model-name
 
 ## 发布
 
+### Cloudflare Worker 备用发布
+
 首次或换密钥后，把密钥写入 Cloudflare Worker Secret：
 
 ```powershell
@@ -64,11 +66,33 @@ $mimoKey | npx wrangler secret put MIMO_API_KEY
 npm run deploy
 ```
 
+### 腾讯 EdgeOne Pages 国内发布
+
+EdgeOne Pages 适合国内微信访问。需要在 EdgeOne Pages 控制台创建项目，并设置这些环境变量：
+
+```text
+AI_PROVIDER=mimo
+MIMO_API_KEY=你的 MiMo 密钥
+AI_MODEL=mimo-v2.5-pro
+AI_MAX_OUTPUT_TOKENS=1600
+```
+
+项目配置已写入 `edgeone.json`。从 GitHub 导入仓库后，EdgeOne 会使用：
+
+```text
+installCommand: npm ci
+buildCommand: npm run check
+outputDirectory: ./public
+```
+
 ## 文件
 
 - `server.js`：本地网页服务、AI 提供商预设、转换接口
 - `worker.js`：Cloudflare Worker 线上服务和 AI 代理
 - `wrangler.toml`：Cloudflare Worker 发布配置
+- `edgeone.json`：腾讯 EdgeOne Pages 发布配置
+- `edge-functions/api/config.js`：EdgeOne 配置接口
+- `edge-functions/api/translate.js`：EdgeOne 文言文转换接口
 - `public/index.html`：页面结构
 - `public/styles.css`：界面视觉
 - `public/app.js`：交互逻辑
